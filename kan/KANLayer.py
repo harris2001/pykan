@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from .spline import *
+from spline import *
 
+debug = True
 
 class KANLayer(nn.Module):
     """
@@ -113,11 +114,27 @@ class KANLayer(nn.Module):
         self.num = num
         self.k = k
 
+        '''
+            Creates a tensor of out*in tensors each splitted in grids with and another tensor of the corresponding noises
+        '''
         # shape: (size, num)
-        self.grid = torch.einsum('i,j->ij', torch.ones(size, device=device), torch.linspace(grid_range[0], grid_range[1], steps=num + 1, device=device))
+        self.grid = torch.einsum('i,j->ij', torch.ones(size, device=device), torch.linspace(grid_range[0], grid_range[1], steps=num + 1, device=device)) 
+        # split linspace in num+1 steps and outerproduct that with a tensor of ones of size out*in 
         self.grid = torch.nn.Parameter(self.grid).requires_grad_(False)
+        # make it a parameter of the model
+        if debug:
+            for param in self.parameters():
+                print(type(param.data), param.size())
+        # check if the parameters are accessible
         noises = (torch.rand(size, self.grid.shape[1]) - 1 / 2) * noise_scale / num
         noises = noises.to(device)
+        if debug:
+            print(noises)
+        # generates a noise tensor of size size in the range [-0.5,0.5] multiply by the noise_scale and normalise by the number of intervals (distribute the noise amongst grid intervals)
+
+        '''
+
+        '''
         # shape: (size, coef)
         self.coef = torch.nn.Parameter(curve2coef(self.grid, noises, self.grid, k, device))
         if isinstance(scale_base, float):
@@ -156,7 +173,7 @@ class KANLayer(nn.Module):
         
         Example
         -------
-        >>> model = KANLayer(in_dim=3, out_dim=5)
+        >>> 
         >>> x = torch.normal(0,1,size=(100,3))
         >>> y, preacts, postacts, postspline = model(x)
         >>> y.shape, preacts.shape, postacts.shape, postspline.shape

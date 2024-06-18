@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from .KANLayer import *
-from .Symbolic_KANLayer import *
-from .LBFGS import *
+from KANLayer import *
+from Symbolic_KANLayer import *
+from LBFGS import *
 import os
 import glob
 import matplotlib.pyplot as plt
