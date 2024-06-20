@@ -1,5 +1,6 @@
 import torch
 
+debug = False
 
 def B_batch(x, grid, k=0, extend=True, device='cpu'):
     '''
@@ -50,15 +51,24 @@ def B_batch(x, grid, k=0, extend=True, device='cpu'):
     if extend == True:
         grid = extend_grid(grid, k_extend=k)
 
+    # Use tensor.unsqueeze to break each of the knokts of every spline as a singleton 
     grid = grid.unsqueeze(dim=2).to(device)
+    # Use tensor.unsqueeze to create a list containing many lists each containing a single list
     x = x.unsqueeze(dim=1).to(device)
-
+    
     if k == 0:
+        # If the splines are of degree 0 then return 1 if x belongs in the range between the two knots of the spline
+        # and return 0 if it doesn't
         value = (x >= grid[:, :-1]) * (x < grid[:, 1:])
     else:
+        # Use Cox-de Boor recursion to evaluate the B_{i,k}(x) for a given x_eval on every spline of the grid
         B_km1 = B_batch(x[:, 0], grid=grid[:, :, 0], k=k - 1, extend=False, device=device)
         value = (x - grid[:, :-(k + 1)]) / (grid[:, k:-1] - grid[:, :-(k + 1)]) * B_km1[:, :-1] + (
                     grid[:, k + 1:] - x) / (grid[:, k + 1:] - grid[:, 1:(-k)]) * B_km1[:, 1:]
+    # if debug:
+    #     print(f"{k} th spline has value {value}")
+    #     print(f"Evaluating: {x}")
+    #     print(f"Grid: {grid}")
     return value
 
 
@@ -100,6 +110,8 @@ def coef2curve(x_eval, grid, coef, k, device="cpu"):
     # coef: (size, coef), B_batch: (size, coef, batch), summer over coef
     if coef.dtype != x_eval.dtype:
         coef = coef.to(x_eval.dtype)
+    # Multiply each coefficient [i,j] with the corresponding basis function of the k^th batch component [i,j] of B_batch
+    # for the i^th spline and j^th coefficient of that spline
     y_eval = torch.einsum('ij,ijk->ik', coef, B_batch(x_eval, grid, k, device=device))
     return y_eval
 
@@ -133,8 +145,13 @@ def curve2coef(x_eval, y_eval, grid, k, device="cpu"):
     torch.Size([5, 13])
     '''
     # x_eval: (size, batch); y_eval: (size, batch); grid: (size, grid); k: scalar
+    # Compute the B_batch for  the k^th order piexewise polynomial order of splines
     mat = B_batch(x_eval, grid, k, device=device).permute(0, 2, 1)
-    # coef = torch.linalg.lstsq(mat, y_eval.unsqueeze(dim=2)).solution[:, :, 0]
+
+    coef = torch.linalg.lstsq(mat, y_eval.unsqueeze(dim=2)).solution[:, :, 0]
     coef = torch.linalg.lstsq(mat.to(device), y_eval.unsqueeze(dim=2).to(device),
                               driver='gelsy' if device == 'cpu' else 'gels').solution[:, :, 0]
+    if debug:
+        print("MATRIX: ",mat)
+        print("COEF: ",coef)
     return coef.to(device)

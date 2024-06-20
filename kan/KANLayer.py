@@ -124,16 +124,16 @@ class KANLayer(nn.Module):
         # make it a parameter of the model
         if debug:
             for param in self.parameters():
-                print(type(param.data), param.size())
+                print("GRID: ",param)
         # check if the parameters are accessible
         noises = (torch.rand(size, self.grid.shape[1]) - 1 / 2) * noise_scale / num
         noises = noises.to(device)
         if debug:
-            print(noises)
+            print("NOISES: ",noises)
         # generates a noise tensor of size size in the range [-0.5,0.5] multiply by the noise_scale and normalise by the number of intervals (distribute the noise amongst grid intervals)
 
         '''
-
+            
         '''
         # shape: (size, coef)
         self.coef = torch.nn.Parameter(curve2coef(self.grid, noises, self.grid, k, device))
