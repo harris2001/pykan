@@ -137,6 +137,7 @@ class KAN(nn.Module):
         for l in range(self.depth):
             # splines
             scale_base = 1 / np.sqrt(width[l]) + (torch.randn(width[l] * width[l + 1], ) * 2 - 1) * noise_scale_base
+            print(f"Device: {device}")
             sp_batch = KANLayer(in_dim=width[l], out_dim=width[l + 1], num=grid, k=k, noise_scale=noise_scale, scale_base=scale_base, scale_sp=1., base_fun=base_fun, grid_eps=grid_eps, grid_range=grid_range, sp_trainable=sp_trainable,
                                 sb_trainable=sb_trainable, device=device)
             self.act_fun.append(sp_batch)
@@ -370,7 +371,7 @@ class KAN(nn.Module):
         else:
             mask_n = 0.;
             mask_s = 0.
-
+        #                Compute the index of the activation function
         self.act_fun[l].mask.data[j * self.act_fun[l].in_dim + i] = mask_n
         self.symbolic_fun[l].mask.data[j, i] = mask_s
 

@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 from spline import *
 
-debug = True
+debug = False
 
 class KANLayer(nn.Module):
     """
@@ -136,6 +136,8 @@ class KANLayer(nn.Module):
             
         '''
         # shape: (size, coef)
+        if debug:
+            print(f"Coefficients {curve2coef(self.grid, noises, self.grid, k, device)}")
         self.coef = torch.nn.Parameter(curve2coef(self.grid, noises, self.grid, k, device))
         if isinstance(scale_base, float):
             self.scale_base = torch.nn.Parameter(torch.ones(size, device=device) * scale_base).requires_grad_(sb_trainable)  # make scale trainable
